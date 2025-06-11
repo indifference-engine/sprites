@@ -39,19 +39,42 @@ void blended_sprite(const int sprite_rows, const int sprite_columns,
 
   for (int row = 0; row < visible_rows; row++) {
     for (int column = 0; column < visible_columns; column++) {
-      const float forward_opacity = sprite_opacities[sprite_index] * opacity;
-      const float inverse_opacity = 1.0f - forward_opacity;
-      viewport_opacities[viewport_index] =
-          1.0f - (1.0f - viewport_opacities[viewport_index]) * inverse_opacity;
-      viewport_reds[viewport_index] =
-          viewport_reds[viewport_index] * inverse_opacity +
-          red * sprite_reds[sprite_index] * forward_opacity;
-      viewport_greens[viewport_index] =
-          viewport_greens[viewport_index] * inverse_opacity +
-          green * sprite_greens[sprite_index] * forward_opacity;
-      viewport_blues[viewport_index] =
-          viewport_blues[viewport_index] * inverse_opacity +
-          blue * sprite_blues[sprite_index] * forward_opacity;
+      const float source_opacity = sprite_opacities[sprite_index] * opacity;
+      const float inverse_source_opacity = 1.0f - source_opacity;
+      const float destination_opacity = viewport_opacities[viewport_index];
+
+      const float final_opacity =
+          1.0f - inverse_source_opacity * (1.0f - destination_opacity);
+
+      if (final_opacity > 0.0f) {
+        viewport_opacities[viewport_index] = final_opacity;
+
+        const float inverse_opacity = 1.0f / final_opacity;
+        const float source_coefficient = source_opacity * inverse_opacity;
+        const float destination_coefficient =
+            destination_opacity * inverse_source_opacity * inverse_opacity;
+
+        const float source_red = red * sprite_reds[sprite_index];
+        const float destination_red = viewport_reds[viewport_index];
+
+        viewport_reds[viewport_index] =
+            (source_red * source_coefficient +
+             destination_red * destination_coefficient);
+
+        const float source_green = green * sprite_greens[sprite_index];
+        const float destination_green = viewport_greens[viewport_index];
+
+        viewport_greens[viewport_index] =
+            (source_green * source_coefficient +
+             destination_green * destination_coefficient);
+
+        const float source_blue = blue * sprite_blues[sprite_index];
+        const float destination_blue = viewport_blues[viewport_index];
+
+        viewport_blues[viewport_index] =
+            (source_blue * source_coefficient +
+             destination_blue * destination_coefficient);
+      }
 
       sprite_index++;
       viewport_index++;
